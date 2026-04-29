@@ -75,7 +75,7 @@ async function sendToTelegram(text) {
 }
 async function processWithGemini(inputString) {
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemma-4-26b-a4b-it",
     contents: inputString,
   });
   return response.text;
