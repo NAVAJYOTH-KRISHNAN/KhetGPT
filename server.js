@@ -59,6 +59,29 @@ function espAuthGateway(req, res, next) {
   console.log(`[GATEWAY] Authenticated — IP: ${clientIp}`);
   next();
 }
+
+function markdownToTelegramHTML(text) {
+  return (
+    text
+      // bold **text**
+      .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+
+      // headings ### → bold
+      .replace(/^### (.*$)/gim, "<b>$1</b>")
+      .replace(/^## (.*$)/gim, "<b>$1</b>")
+      .replace(/^# (.*$)/gim, "<b>$1</b>")
+
+      // bullet points * → •
+      .replace(/^\* (.*$)/gim, "• $1")
+
+      // horizontal line ---
+      .replace(/---/g, "──────────────")
+
+      // fix double line breaks
+      .replace(/\n{3,}/g, "\n\n")
+  );
+}
+
 async function sendToTelegram(text) {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
@@ -73,6 +96,7 @@ async function sendToTelegram(text) {
     body: JSON.stringify({
       chat_id: TELEGRAM_CHAT_ID,
       text: text,
+      parse_mode: "HTML",
     }),
   });
 
@@ -99,9 +123,10 @@ app.post("/process", espAuthGateway, async (req, res) => {
 
     console.log(`[ESP INPUT] ${inputString}`);
     const aiResponse = await processWithGemini(inputString);
+    const formattedText = markdownToTelegramHTML(aiResponse);
     console.log(`[GEMINI]    ${aiResponse}`);
 
-    const msg = `Farm report of Today\n\n*Input:* ${inputString}\n\n*Response:* ${aiResponse}`;
+    const msg = `Farm report of Today \n \n${formattedText}`;
     await sendToTelegram(msg);
     console.log(`[TELEGRAM]  Sent`);
     res.json({ success: true, response: aiResponse });
@@ -112,7 +137,7 @@ app.post("/process", espAuthGateway, async (req, res) => {
 });
 
 app.get("/", (_req, res) =>
-  res.send("ESP → Gemini → Telegram server is running ✅")
+  res.send("ESP → Gemini → Telegram server is running ")
 );
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));
 
