@@ -61,15 +61,21 @@ function espAuthGateway(req, res, next) {
 }
 async function sendToTelegram(text) {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  // limit message size (Telegram max = 4096)
+  if (text.length > 4000) {
+    text = text.substring(0, 4000);
+  }
+
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: TELEGRAM_CHAT_ID,
-      text,
-      parse_mode: "Markdown",
+      text: text,
     }),
   });
+
   if (!res.ok) throw new Error(`Telegram error: ${await res.text()}`);
   return res.json();
 }
